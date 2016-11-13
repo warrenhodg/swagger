@@ -1,0 +1,6 @@
+{
+	"ImportPath": "gin-swagger",
+	"GoVersion": "go1.7",
+	"GodepVersion": "v60",
+	"Deps": []
+}
