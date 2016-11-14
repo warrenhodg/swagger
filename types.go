@@ -21,13 +21,20 @@ type Response map[string]interface{}
 
 type Responses map[string]Response
 
+type Parameter struct {
+	Name     string
+	In       string
+	Type     string
+	Required bool
+}
+
 type Route struct {
 	XSwaggerRouterController string `json:"x-swagger-router-controller"`
 	OperationId              string
 	Tags                     []string
 	Description              string
 	Security                 []interface{}
-	Parameters               []interface{}
+	Parameters               []Parameter
 	Responses                Responses
 }
 
