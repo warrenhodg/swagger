@@ -11,9 +11,9 @@ import (
 
 var swaggerParamRegexp *regexp.Regexp = regexp.MustCompile("{([^}]*)}")
 
-func addRouteHandler(engine *gin.Engine, httpMethod string, path string, methodDefinition *Route, f gin.HandlerFunc, pathRegex *regexp.Regexp) {
+func addRouteHandler(engine *gin.Engine, httpMethod string, path string, methodDefinition *Route, f gin.HandlerFunc) {
 	var validateFunc = func(context *gin.Context) {
-		parameters := getParameters(context, methodDefinition, pathRegex)
+		parameters := getParameters(context, methodDefinition)
 		context.Set("parameters", parameters)
 		context.Next()
 	}
@@ -28,33 +28,22 @@ func AddRoutesFromSwaggerSpec(spec *Swagger, engine *gin.Engine, routeFunctions 
 			operationId := methodDefinition.OperationId
 
 			ginPath := swaggerParamRegexp.ReplaceAllString(path, ":$1")
-			pathRegex, err := regexp.Compile(swaggerParamRegexp.ReplaceAllString(path, "([^/]*)"))
 
-			if err != nil {
-				fmt.Println("Error : ", err)
-			} else {
-				httpMethod := strings.ToUpper(method)
-				f := routeFunctions[controller+"."+operationId]
-				if f != nil {
-					fmt.Println("Adding route handler for ", ginPath)
+			httpMethod := strings.ToUpper(method)
+			f := routeFunctions[controller+"."+operationId]
+			if f != nil {
+				fmt.Println("Adding route handler for ", ginPath)
 
-					addRouteHandler(engine, httpMethod, ginPath, &methodDefinition, f, pathRegex)
-				}
+				addRouteHandler(engine, httpMethod, ginPath, &methodDefinition, f)
 			}
 		}
 	}
 }
 
-func getParameters(context *gin.Context, route *Route, pathRegex *regexp.Regexp) map[string]interface{} {
+func getParameters(context *gin.Context, route *Route) map[string]interface{} {
 	parameters := route.Parameters
 
 	result := make(map[string]interface{})
-
-	uri := context.Request.RequestURI
-
-	matches := pathRegex.FindStringSubmatch(uri)
-
-	fmt.Println("Matches ", matches)
 
 	for i := 0; i < len(parameters); i++ {
 		parameter := parameters[i]
@@ -66,10 +55,7 @@ func getParameters(context *gin.Context, route *Route, pathRegex *regexp.Regexp)
 				result[parameter.Name] = value
 			}
 		} else if parameter.In == "path" {
-			//TODO: Dont assume parameter order
-			if i+1 < len(matches) {
-				result[parameter.Name] = matches[i+1]
-			}
+			result[parameter.Name] = context.Param(parameter.Name)
 		} else if parameter.In == "body" {
 			bytes, err := ioutil.ReadAll(context.Request.Body)
 
